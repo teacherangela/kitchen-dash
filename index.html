@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html style="height: 100%; overflow: hidden; touch-action: none;">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --mcd-red: #DA291C; --mcd-yellow: #FFC72C; --dark: #333; }
+        body { font-family: 'Fredoka', sans-serif; background: var(--mcd-red); height: 100vh; margin: 0; color: white; display: flex; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
+        
+        #landingPage { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #b31b12, #DA291C); z-index: 100; position: relative; }
+        
+        /* Floating massive food icons */
+        #bgContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; }
+        .float-emoji { position: absolute; font-size: 120px; animation: floatUp 12s linear infinite; opacity: 0.25; filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)); }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) rotate(0deg) scale(0.8); }
+            50% { transform: translateY(50vh) rotate(180deg) scale(1.2); }
+            100% { transform: translateY(-20vh) rotate(360deg) scale(0.8); }
+        }
+
+        .main-content { z-index: 1; display: flex; flex-direction: column; align-items: center; }
+        .controls-top-right { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 2; }
+        .fs-btn, .mute-btn { background: rgba(255,255,255,0.2); font-size: 1.5rem; padding: 10px; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        .brand-sub { font-size: 1.5rem; color: white; text-transform: uppercase; letter-spacing: 2px; margin-bottom: -10px; }
+        .title-text { font-size: 6rem; color: #FFC72C; text-shadow: 4px 4px 0px #000; margin-bottom: 20px; transform: rotate(-3deg); text-transform: uppercase; text-align: center; }
+        .setup-card { background: white; color: var(--dark); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 350px; }
+        .input-group { margin: 10px 0; font-size: 1rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .checkbox-group { display: flex; justify-content: space-between; margin: 10px 0; font-size: 0.9rem; }
+        
+        #gameContainer { display: none; height: 100vh; flex-direction: column; position: relative; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(0,0,0,0.1); }
+        .top-bar .controls { display: flex; gap: 10px; }
+        .top-bar button { background: rgba(255,255,255,0.2); font-size: 1.2rem; padding: 5px 15px; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        .arena { display: flex; flex: 1; padding: 10px; gap: 10px; overflow: hidden; }
+        .player-side { flex: 1; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 15px; overflow: hidden; position: relative; }
+        .player-header, .p-timer { font-weight: 600; text-align: center; }
+        .player-header { font-size: 1.8rem; }
+        .p-timer { font-size: 1.2rem; }
+        .order-box { background: white; color: black; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 1.5rem; min-height: 80px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
+        .menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; }
+        .menu-item { font-size: 35px; background: white; padding: 6px; border-radius: 6px; text-align: center; color: black; cursor: pointer; touch-action: none; position: relative; z-index: 5; }
+        .drag-clone { position: fixed; pointer-events: none; z-index: 1000; font-size: 45px; transform: translate(-50%, -50%); transition: none; }
+        .tray { height: 120px; border: 4px dashed white; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; align-content: start; overflow-y: auto; }
+        .btn-row { display: flex; gap: 5px; margin-top: 5px; }
+        .btn-row button { flex: 1; padding: 12px; font-weight: 600; cursor: pointer; border: none; border-radius: 6px; background: var(--mcd-yellow); font-size: 1.1rem; }
+        #gameOverOverlay { display: none; position: absolute; top:0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; z-index: 200; }
+    </style>
+</head>
+<body>
+    <div id="landingPage">
+        <div id="bgContainer"></div>
+        <div class="controls-top-right">
+            <button class="mute-btn" id="muteBtnLanding" onclick="toggleMute()">🔊</button>
+            <button class="fs-btn" onclick="toggleFullscreen()">⛶</button>
+        </div>
+        <div class="main-content">
+            <div class="brand-sub">Teacher Angela's</div>
+            <div class="title-text">KITCHEN DASH!</div>
+            <div class="setup-card">
+                <div class="input-group">Time (sec): <input type="number" id="setTime" value="60"></div>
+                <div class="input-group">Players: <input type="number" id="numPlayers" value="2" min="1" max="3"></div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="catMains" checked> Mains</label>
+                    <label><input type="checkbox" id="catSides" checked> Sides</label>
+                    <label><input type="checkbox" id="catDrinks" checked> Drinks</label>
+                </div>
+                <div class="input-group">Order Type: <select id="orderMode"><option value="random">Random</option><option value="uniform">Same for All</option></select></div>
+                <button onclick="startApp()" style="width: 100%; background: var(--mcd-red); color: white; font-size: 1.3rem; margin-top: 10px; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600;">START GAME</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameContainer">
+        <div id="gameOverOverlay">
+            <h1 id="winnerTitle" style="color: var(--mcd-yellow);"></h1>
+            <button onclick="backToMenu()" style="padding: 15px 30px; font-size: 1.5rem; cursor: pointer;">PLAY AGAIN</button>
+        </div>
+        <div class="top-bar">
+            <button onclick="backToMenu()">⬅</button>
+            <div class="controls">
+                <button id="pauseBtn" onclick="togglePause()">⏸</button>
+                <button id="muteBtnGame" onclick="toggleMute()">🔊</button>
+                <button onclick="toggleFullscreen()">⛶</button>
+            </div>
+        </div>
+        <div class="arena" id="arena"></div>
+    </div>
+
+    <audio id="bgMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <audio id="sfxSuccess" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+
+    <script>
+        // Floating Background Logic
+        const bgContainer = document.getElementById('bgContainer');
+        const foodItems = ['🍕', '🍔', '🌭', '🥪', '🌮', '🍝', '🍜', '🍗', '🍰', '🍦', '🥣', '🥞', '☕', '🍵', '🧋', '🍟'];
+        
+        function createFloatingEmoji() {
+            const emoji = document.createElement('div');
+            emoji.className = 'float-emoji';
+            emoji.innerText = foodItems[Math.floor(Math.random() * foodItems.length)];
+            emoji.style.left = Math.random() * 100 + 'vw';
+            emoji.style.animationDuration = (Math.random() * 8 + 8) + 's';
+            bgContainer.appendChild(emoji);
+            setTimeout(() => emoji.remove(), 16000);
+        }
+        setInterval(createFloatingEmoji, 2000);
+        for(let i=0; i<6; i++) setTimeout(createFloatingEmoji, i * 1500);
+
+        // --- Original Game Logic Retained ---
+        let gameInterval, isMusicMuted = false, isPaused = false, state = {}, startTime, masterOrder = null, activePointers = {};
+        const menuData = {
+            'Mains': { 'pizza': '🍕', 'burger': '🍔', 'hotdog': '🌭', 'sandwich': '🥪', 'taco': '🌮', 'spaghetti': '🍝', 'noodles': '🍜', 'fried chicken': '🍗' },
+            'Sides': { 'cake': '🍰', 'ice cream': '🍦', 'soup': '🥣', 'pancakes': '🥞' },
+            'Drinks': { 'coffee': '☕', 'tea': '🍵' , 'bubble tea': '🧋', 'french fries': '🍟' }
+        };
+
+        function startDrag(e, name, emoji, pId) {
+            if (isPaused) return;
+            if (activePointers[e.pointerId]) { if (activePointers[e.pointerId].el.parentNode) document.body.removeChild(activePointers[e.pointerId].el); }
+            const clone = document.createElement('div');
+            clone.className = 'drag-clone'; clone.innerHTML = emoji;
+            clone.style.left = e.clientX + 'px'; clone.style.top = e.clientY + 'px';
+            document.body.appendChild(clone);
+            activePointers[e.pointerId] = { el: clone, name: name, emoji: emoji, originPlayer: pId };
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+        }
+
+        function handlePointerMove(e) {
+            const data = activePointers[e.pointerId];
+            if (data) { data.el.style.left = e.clientX + 'px'; data.el.style.top = e.clientY + 'px'; }
+        }
+
+        function handlePointerUp(e) {
+            const data = activePointers[e.pointerId];
+            if (data) {
+                const tray = document.getElementById(`tray${data.originPlayer}`);
+                const r = tray.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+                    state[data.originPlayer].tray.push({ n: data.name, e: data.emoji });
+                    renderTray(data.originPlayer);
+                }
+                if (data.el && data.el.parentNode) document.body.removeChild(data.el);
+                delete activePointers[e.pointerId];
+            }
+        }
+
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        function toggleMute() { isMusicMuted = !isMusicMuted; document.getElementById('bgMusic').muted = isMusicMuted; document.getElementById('muteBtnLanding').innerText = document.getElementById('muteBtnGame').innerText = isMusicMuted ? '🔇' : '🔊'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('pauseBtn').innerText = isPaused ? '▶' : '⏸'; }
+        function backToMenu() { clearInterval(gameInterval); isPaused = false; document.getElementById('gameContainer').style.display = 'none'; document.getElementById('gameOverOverlay').style.display = 'none'; document.getElementById('landingPage').style.display = 'flex'; document.getElementById('bgMusic').pause(); }
+        function getActiveMenu() {
+            let active = {};
+            if(document.getElementById('catMains').checked) Object.assign(active, menuData['Mains']);
+            if(document.getElementById('catSides').checked) Object.assign(active, menuData['Sides']);
+            if(document.getElementById('catDrinks').checked) Object.assign(active, menuData['Drinks']);
+            return active;
+        }
+
+        function startApp() {
+            document.getElementById('bgMusic').play().catch(e => console.log("Audio requires interaction"));
+            const numP = parseInt(document.getElementById('numPlayers').value);
+            const activeMenu = getActiveMenu();
+            state = {}; startTime = Date.now(); masterOrder = null;
+            const arena = document.getElementById('arena');
+            const totalTime = parseInt(document.getElementById('setTime').value);
+            arena.innerHTML = '';
+            for(let i=1; i<=numP; i++) {
+                state[i] = { score: 0, completedCount: 0, timeTaken: 0, tray: [], target: {}, timer: totalTime };
+                arena.innerHTML += `<div class="player-side" id="playerSide${i}"><div class="player-header">Player ${i} | <span id="s${i}">0</span></div><div class="p-timer" id="pt${i}">Time: ${totalTime}s</div><div class="order-box" id="order${i}"></div><div class="menu-grid" id="menu${i}"></div><div class="tray" id="tray${i}"></div><div class="btn-row"><button onclick="clearTray(${i})">CLEAR</button><button onclick="checkOrder(${i})">SERVE</button></div></div>`;
+            }
+            if(document.getElementById('orderMode').value === 'uniform') masterOrder = generateRandomOrderObj(activeMenu);
+            for(let i=1; i<=numP; i++) {
+                const menuEl = document.getElementById(`menu${i}`);
+                Object.entries(activeMenu).forEach(([name, emoji]) => {
+                    const item = document.createElement('div'); item.className = 'menu-item'; item.innerHTML = emoji;
+                    item.addEventListener('pointerdown', (e) => startDrag(e, name, emoji, i));
+                    menuEl.appendChild(item);
+                });
+                updatePlayerOrder(i, activeMenu);
+            }
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'flex';
+            runGameLoop();
+        }
+
+        function runGameLoop() {
+            gameInterval = setInterval(() => {
+                if (isPaused) return;
+                let active = 0;
+                for(let i in state) {
+                    if(state[i].timer > 0) { state[i].timer--; document.getElementById(`pt${i}`).innerText = `Time: ${state[i].timer}s`; active++; state[i].timeTaken++; }
+                }
+                if(active === 0) { clearInterval(gameInterval); endGame(); }
+            }, 1000);
+        }
+
+        function endGame() {
+            let players = Object.keys(state).map(i => ({ id: i, score: state[i].score, completed: state[i].completedCount, time: state[i].timeTaken }));
+            players.sort((a, b) => b.score - a.score || b.completed - a.completed || a.time - b.time);
+            const winner = players[0];
+            document.getElementById('winnerTitle').innerText = `PLAYER ${winner.id} WINS!`;
+            document.getElementById('gameOverOverlay').style.display = 'flex';
+        }
+
+        function generateRandomOrderObj(menu) {
+            const all = Object.entries(menu);
+            let target = {};
+            for(let i=0; i<3; i++) { const item = all[Math.floor(Math.random() * all.length)][0]; target[item] = (target[item] || 0) + 1; }
+            return target;
+        }
+
+        function updatePlayerOrder(pId, menu) {
+            state[pId].target = (document.getElementById('orderMode').value === 'uniform') ? masterOrder : generateRandomOrderObj(menu);
+            document.getElementById(`order${pId}`).innerHTML = Object.entries(state[pId].target).map(([name, qty]) => `${name} x${qty}`).join('<br>'); 
+        }
+
+        function renderTray(pId) { document.getElementById(`tray${pId}`).innerHTML = state[pId].tray.map((item) => `<div class="menu-item">${item.e}</div>`).join(''); }
+        function clearTray(pId) { state[pId].tray = []; renderTray(pId); }
+        
+        function checkOrder(pId) {
+            const trayCount = {}; state[pId].tray.forEach(i => trayCount[i.n] = (trayCount[i.n] || 0) + 1);
+            let match = Object.keys(state[pId].target).length === Object.keys(trayCount).length && Object.keys(state[pId].target).every(k => trayCount[k] === state[pId].target[k]);
+            
+            if (match) {
+                document.getElementById('sfxSuccess').currentTime = 0; document.getElementById('sfxSuccess').play();
+                state[pId].score += 10;
+                state[pId].completedCount++;
+                document.getElementById(`s${pId}`).innerText = state[pId].score;
+                
+                if(document.getElementById('orderMode').value === 'uniform') {
+                    for(let i in state) { state[i].tray = []; renderTray(i); }
+                    masterOrder = generateRandomOrderObj(getActiveMenu());
+                    for(let i in state) updatePlayerOrder(i, getActiveMenu());
+                } else {
+                    state[pId].tray = []; renderTray(pId);
+                    updatePlayerOrder(pId, getActiveMenu());
+                }
+            }
+        }
+    </script>
+</body>
+</html>
